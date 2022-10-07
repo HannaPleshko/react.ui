@@ -1,0 +1,20 @@
+.item {
+  display: flex;
+  height: auto;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.name {
+  margin: 0 20px 5px 0;
+  font-weight: bold;
+}
+
+.label {
+  margin-right: 3px;
+  margin-bottom: 0;
+  flex-wrap: wrap;
+  display: flex;
+}
