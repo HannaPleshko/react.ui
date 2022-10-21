@@ -1,5 +1,5 @@
 import { Container } from '@mui/material';
-import FooterButtons from './components/Button/FooterButtons';
+import SaveButton from './components/Button/SaveButton';
 import EducationAndTraining from './components/EducationAndTraining/EducationAndTraining';
 import Header from './components/Header/Header';
 import ProfessionalExperience from './components/ProfessionalExperience/ProfessionalExperience';
@@ -17,7 +17,7 @@ function CVEditor() {
         <ProfessionalExperience />
         <EducationAndTraining />
         <ResumeFileName />
-        <FooterButtons />
+        <SaveButton />
       </Container>
     </>
   );

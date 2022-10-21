@@ -1,96 +1,87 @@
-import React, { useState } from 'react';
-import { Button, Snackbar } from '@mui/material';
-import { useAppSelector } from '../../../../../hooks/redux';
-import MuiAlert, { AlertProps } from '@mui/material/Alert';
+import { useState, useEffect, FC } from 'react';
+import { Tooltip } from '@mui/material';
 import {
-  BUTTON_TEXTS,
   SUCCESS_MESSAGES,
   ERROR_MESSAGES,
+  DOC_TYPE,
+  BUTTON_TEXTS,
 } from '../../../../../utils/constants/resumeConstants';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import DescriptionIcon from '@mui/icons-material/Description';
+import { LoadingButton } from '@mui/lab';
+import { useDownloadResumeQuery } from '../../../../../store/api/ResumeApi';
+import AlertComponent from '../AlertComponent';
 
-const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
+interface IDownloadButton {
+  resume_id: string;
+  disabled?: boolean;
+}
+const DownloadButton: FC<IDownloadButton> = ({ resume_id, disabled = false }) => {
+  const [skipRTK, setSkipRTK] = useState(true);
+  const [type, setType] = useState(DOC_TYPE.DOC);
 
-const DownloadButton = () => {
-  const resumes = useAppSelector((state) => state.resumeUtils.resumes);
-  const id = resumes.at(-1)?.id;
   const [openSuccessAlert, setOpenSuccessAlert] = useState(false);
   const [openErrorAlert, setOpenErrorAlert] = useState(false);
+  const [message, setMessage] = useState('');
+  const [severityProp, setSeverity] = useState(false);
 
-  const handleClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') {
-      return;
+  const { isLoading, isFetching, isError, isSuccess } = useDownloadResumeQuery(
+    { resume_id, docType: type },
+    { skip: skipRTK }
+  );
+
+  useEffect(() => {
+    if (!isFetching) {
+      setSkipRTK(true);
     }
-    openSuccessAlert && setOpenSuccessAlert(false);
-    openErrorAlert && setOpenErrorAlert(false);
-  };
-  const showSuccessAlert = () => {
-    setOpenSuccessAlert(true);
-  };
-
-  const showErrorAlert = () => {
-    setOpenErrorAlert(true);
-  };
-
-  const handleSubmit = (e: React.SyntheticEvent | Event) => {
-    e.preventDefault();
-    id && downloadFile(id);
-  };
-
-  const downloadFile = async (id: string) => {
-    try {
-      const response = await fetch(`api/v1/resume/download?file=${id}`);
-      if (response.status === 200) {
-        showSuccessAlert();
-        const blob = await response.blob();
-        const downloadUrl = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.setAttribute('href', downloadUrl);
-        link.download = id;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      }
-    } catch (error) {
-      showErrorAlert();
-      console.error(error);
-      alert(error);
+    if (isError) {
+      setOpenErrorAlert(true);
+      setSeverity(false);
+      setMessage(ERROR_MESSAGES.resumeNotDownloaded);
     }
+    if (isSuccess) {
+      setOpenSuccessAlert(true);
+      setSeverity(true);
+      setMessage(SUCCESS_MESSAGES.successfullyDownloaded);
+    }
+  }, [isError, isFetching, isSuccess]);
+
+  const downloadFile = async (id: string, docType: string) => {
+    setType(docType);
+    setSkipRTK(false);
   };
 
   return (
     <>
-      <Button
-        variant="contained"
-        size="large"
-        onClick={handleSubmit}
-        style={{ display: 'block', textAlign: 'center', margin: '2rem auto' }}
-      >
-        {BUTTON_TEXTS.download}
-      </Button>
-      <Snackbar
-        open={openSuccessAlert}
-        autoHideDuration={6000}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ marginTop: '20%' }}
-      >
-        <Alert onClose={handleClose} severity="success" sx={{ width: '100%' }}>
-          {SUCCESS_MESSAGES.successfullyDownloaded}
-        </Alert>
-      </Snackbar>
-      <Snackbar
-        open={openErrorAlert}
-        autoHideDuration={6000}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ marginTop: '20%' }}
-      >
-        <Alert onClose={handleClose} severity="error" sx={{ width: '100%' }}>
-          {ERROR_MESSAGES.resumeNotDownloaded}
-        </Alert>
-      </Snackbar>
+      <Tooltip title={BUTTON_TEXTS.downloadPDF} followCursor>
+        <span>
+          <LoadingButton
+            disabled={disabled ? disabled : isLoading && type === DOC_TYPE.DOC}
+            loading={isLoading && type === DOC_TYPE.PDF}
+            loadingPosition="start"
+            startIcon={<PictureAsPdfIcon />}
+            onClick={() => downloadFile(resume_id, DOC_TYPE.PDF)}
+          ></LoadingButton>
+        </span>
+      </Tooltip>
+      <Tooltip title={BUTTON_TEXTS.downloadDOC} followCursor>
+        <span>
+          <LoadingButton
+            disabled={disabled ? disabled : isLoading && type === DOC_TYPE.PDF}
+            loading={isLoading && type === DOC_TYPE.DOC}
+            loadingPosition="start"
+            startIcon={<DescriptionIcon />}
+            onClick={() => downloadFile(resume_id, DOC_TYPE.DOC)}
+          ></LoadingButton>
+        </span>
+      </Tooltip>
+
+      <AlertComponent
+        severityProp={severityProp}
+        message={message}
+        onError={{ openErrorAlert, setOpenErrorAlert }}
+        onSuccess={{ openSuccessAlert, setOpenSuccessAlert }}
+      />
     </>
   );
 };

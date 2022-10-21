@@ -1,138 +1,117 @@
 import React, { FC, useState, useEffect } from 'react';
-import { Button, Snackbar, Tooltip } from '@mui/material';
-import { ApiService } from '../../../../../utils/Api/ApiService';
-import MuiAlert, { AlertProps } from '@mui/material/Alert';
-import { resetResumeSlice } from '../../../../../store/reducers/ResumeSlice';
-import { resetServiceSlice } from '../../../../../store/reducers/ServiceSlice';
+import { Tooltip } from '@mui/material';
+import LoadingButton from '@mui/lab/LoadingButton';
 import { validatedFields } from '../../../../../utils/resumeUtils';
-import { useAppSelector, useAppDispatch } from '../../../../../hooks/redux';
+import { useAppSelector } from '../../../../../hooks/redux';
 import {
   CONFIRMATION_MESSAGES,
   ERROR_MESSAGES,
   BUTTON_TEXTS,
   SUCCESS_MESSAGES,
 } from '../../../../../utils/constants/resumeConstants';
-import { setResumes, resetResumeUtilsSlice } from '../../../../../store/reducers/ResumeUtilsSlice';
+import { useAddResumeMutation } from '../../../../../store/api/ResumeApi';
+import SaveIcon from '@mui/icons-material/Save';
+import DownloadButton from './DownloadButton';
+import AlertComponent from '../AlertComponent';
 
-const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
-
-interface ISaveButtonProps {
-  isSaved: boolean;
-}
-
-const SaveButton: FC<ISaveButtonProps> = ({ isSaved }): JSX.Element => {
+const SaveButton: FC = (): JSX.Element => {
   const [openSuccessAlert, setOpenSuccessAlert] = useState(false);
   const [openErrorAlert, setOpenErrorAlert] = useState(false);
+  const [addResume, { isLoading, data: serverData, isSuccess }] = useAddResumeMutation();
+  const [resume_id, setResumeId] = useState('');
+  const [disabled, setDisabled] = useState(true);
+  const [message, setMessage] = useState('');
+  const [severityProp, setSeverity] = useState(false);
 
   const showSuccessAlert = () => {
     setOpenSuccessAlert(true);
+    setMessage(SUCCESS_MESSAGES.successfullySaved);
   };
 
   const showErrorAlert = () => {
     setOpenErrorAlert(true);
-  };
-
-  const handleClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    openSuccessAlert && setOpenSuccessAlert(false);
-    openErrorAlert && setOpenErrorAlert(false);
+    setMessage(ERROR_MESSAGES.resumeNotSaved);
   };
 
   const resume = useAppSelector((state) => state.resume);
   const isValid = validatedFields(resume);
-  const dispatch = useAppDispatch();
   const handleSubmit = (e?: React.SyntheticEvent | Event) => {
     e?.preventDefault();
     uploadResume();
   };
 
+  useEffect(() => {
+    if (isSuccess) {
+      setResumeId(serverData);
+      setDisabled(false);
+    }
+  }, [disabled, isLoading, isSuccess, serverData]);
+
   const uploadResume = async () => {
-    await ApiService.sendResume({
-      ...resume,
-    })
-      .then((response) => {
+    await addResume(resume)
+      .unwrap()
+      .then(() => {
         showSuccessAlert();
-        downloadAllResumeNames();
-        dispatch(resetResumeSlice());
-        dispatch(resetResumeUtilsSlice());
-        dispatch(resetServiceSlice());
-        localStorage.removeItem('persist:root');
-        return response.data;
+        setSeverity(true);
       })
       .catch((error) => {
         showErrorAlert();
-        console.error(error);
-      });
-  };
-
-  useEffect(() => {
-    downloadAllResumeNames();
-  }, [isSaved]);
-
-  const downloadAllResumeNames = async () => {
-    await ApiService.getResume()
-      .then((response) => {
-        dispatch(setResumes(response));
-        return response;
-      })
-      .catch((error) => {
+        setSeverity(false);
         console.error(error);
       });
   };
 
   return (
     <>
-      {isValid ? (
-        <Button
-          variant="contained"
-          size="large"
-          onClick={handleSubmit}
-          style={{ display: 'block', textAlign: 'center', margin: '2rem auto' }}
-          disabled={!isValid}
-        >
-          {BUTTON_TEXTS.saveResume}
-        </Button>
-      ) : (
-        <Tooltip title={CONFIRMATION_MESSAGES.confirmFields} followCursor>
-          <span>
-            <Button
-              variant="contained"
-              size="large"
-              onClick={handleSubmit}
-              style={{ display: 'block', textAlign: 'center', margin: '2rem auto' }}
-              disabled={!isValid}
-            >
-              {BUTTON_TEXTS.saveResume}
-            </Button>
-          </span>
-        </Tooltip>
-      )}
-      <Snackbar
-        open={openSuccessAlert}
-        autoHideDuration={6000}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ marginTop: '20%' }}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+        }}
       >
-        <Alert onClose={handleClose} severity="success" sx={{ width: '100%' }}>
-          {SUCCESS_MESSAGES.successfullySaved}
-        </Alert>
-      </Snackbar>
-      <Snackbar
-        open={openErrorAlert}
-        autoHideDuration={6000}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ marginTop: '20%' }}
-      >
-        <Alert onClose={handleClose} severity="error" sx={{ width: '100%' }}>
-          {ERROR_MESSAGES.resumeNotSaved}
-        </Alert>
-      </Snackbar>
+        {isValid ? (
+          <LoadingButton
+            style={{
+              margin: '2rem  2rem  2rem 2rem ',
+            }}
+            size="large"
+            onClick={handleSubmit}
+            loading={isLoading}
+            startIcon={<SaveIcon />}
+            loadingPosition="start"
+            variant="contained"
+            disabled={!isValid}
+          >
+            {BUTTON_TEXTS.saveResume}
+          </LoadingButton>
+        ) : (
+          <Tooltip title={CONFIRMATION_MESSAGES.confirmFields} followCursor>
+            <span>
+              <LoadingButton
+                style={{ margin: '2rem auto' }}
+                size="large"
+                onClick={handleSubmit}
+                loading={isLoading}
+                startIcon={<SaveIcon />}
+                loadingPosition="start"
+                variant="contained"
+                disabled={!isValid}
+              >
+                {BUTTON_TEXTS.saveResume}
+              </LoadingButton>
+            </span>
+          </Tooltip>
+        )}
+        <DownloadButton disabled={disabled} resume_id={resume_id} />
+      </div>
+      <AlertComponent
+        severityProp={severityProp}
+        message={message}
+        onError={{ openErrorAlert, setOpenErrorAlert }}
+        onSuccess={{ openSuccessAlert, setOpenSuccessAlert }}
+      />
     </>
   );
 };

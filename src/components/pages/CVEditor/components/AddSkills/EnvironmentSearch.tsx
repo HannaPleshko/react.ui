@@ -3,7 +3,6 @@ import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 import CircularProgress from '@mui/material/CircularProgress';
 import { ISkillItem } from '../../../../../types/skills';
-import { ApiService } from '../../../../../utils/Api/ApiService';
 import { isLatinLettersText, isLatinLettersTextAndNumbers } from '../../../../../utils/resumeUtils';
 import { Button } from '@mui/material';
 import EnvironmentModal from './EnvironmentModal';
@@ -12,6 +11,7 @@ import {
   PROJECT_MODAL,
   NO_OPTIONS,
 } from '../../../../../utils/constants/resumeConstants';
+import { useGetSkillsQuery } from '../../../../../store/api/SkillApi';
 
 interface ISearchProps {
   chipData: ISkillItem[];
@@ -25,6 +25,7 @@ const EnvironmentSearch: FC<ISearchProps> = ({ chipData, setChipData }) => {
   const [value, setValue] = useState<ISkillItem | null>(null);
   const loading = open && options.length === 0;
   const [openModal, setOpenModal] = useState(false);
+  const { data: serverSkills = [], isLoading } = useGetSkillsQuery();
 
   useEffect(() => {
     if (value && !chipData.some((item) => item.environment_id === value.environment_id)) {
@@ -42,18 +43,14 @@ const EnvironmentSearch: FC<ISearchProps> = ({ chipData, setChipData }) => {
       return undefined;
     }
 
-    (async () => {
-      const res = await ApiService.getAllSkills();
-
-      if (active) {
-        setOptions([...res]);
-      }
-    })();
+    if (active) {
+      setOptions([...serverSkills]);
+    }
 
     return () => {
       active = false;
     };
-  }, [loading, setValue, value, chipData, setChipData]);
+  }, [loading, setValue, value, chipData, setChipData, isLoading, serverSkills]);
 
   return (
     <>

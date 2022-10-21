@@ -1,7 +1,6 @@
-import { FC, forwardRef, useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { ISkillItem } from '../../../../../types/skills';
 import { isLatinLettersText } from '../../../../../utils/resumeUtils';
-import { ApiService } from '../../../../../utils/Api/ApiService';
 import styles from '../ProfessionalExperience/CompanyProject/CompanyProjectModal.module.css';
 import {
   FormControl,
@@ -10,9 +9,7 @@ import {
   MenuItem,
   Select,
   SelectChangeEvent,
-  Snackbar,
 } from '@mui/material';
-import MuiAlert, { AlertProps } from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Modal from '@mui/material/Modal';
@@ -25,10 +22,11 @@ import {
   SUCCESS_MESSAGES,
   BUTTON_TEXTS,
 } from '../../../../../utils/constants/resumeConstants';
+import { useAddSkillMutation, useGetSkillsQuery } from '../../../../../store/api/SkillApi';
+import { LoadingButton } from '@mui/lab';
+import SaveIcon from '@mui/icons-material/Save';
+import AlertComponent from '../AlertComponent';
 
-const Alert = forwardRef<HTMLDivElement, AlertProps>(function Alert(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
 interface EnvironmentModalProps {
   open: boolean;
   setOpen: (arg0: boolean) => void;
@@ -51,12 +49,17 @@ const EnvironmentModal: FC<EnvironmentModalProps> = ({
   const [skillValue, setSkillValue] = useState('');
   const [categoryValue, setCategoryValue] = useState(CATEGORY_LIST[0].label);
   const [priorityValue, setPriorityValue] = useState(PRIORITY_LIST[3]);
+
+  const [errorRepeated, setErrorRepeated] = useState(false);
   const [openSuccessAlert, setOpenSuccessAlert] = useState(false);
   const [openErrorAlert, setOpenErrorAlert] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [errorRepeated, setErrorRepeated] = useState(false);
-  const newSkillCategory = CATEGORY_LIST.filter((item) => item.label === categoryValue);
+  const [message, setMessage] = useState('');
+  const [severityProp, setSeverity] = useState(false);
 
+  const { data: serverSkills = [] } = useGetSkillsQuery();
+  const [addSkill, { isLoading: loadingAddingSkill }] = useAddSkillMutation();
+
+  const newSkillCategory = CATEGORY_LIST.filter((item) => item.label === categoryValue);
   const handleCloseModal = () => setOpen(false);
 
   const handleCategoryChange = (event: SelectChangeEvent) => {
@@ -89,41 +92,28 @@ const EnvironmentModal: FC<EnvironmentModalProps> = ({
       isLatinLettersText(skillValue) &&
       !options.some((item) => item.label === newSkill.label)
     ) {
-      await ApiService.sendSkill(newSkill)
-        .then((response) => {
+      await addSkill(newSkill)
+        .unwrap()
+        .then((res) => {
+          setChipData([...chipData, res]);
+          setOptions([...serverSkills, res]);
+
           setOpenSuccessAlert(true);
-          setChipData([
-            ...chipData,
-            {
-              ...response,
-            },
-          ]);
           setOpen(false);
+          setSeverity(true);
+          setMessage(SUCCESS_MESSAGES.successfullySavedSkill);
         })
-        .catch((error) => {
+        .catch((err) => {
+          console.error(err.error);
+
           setOpenErrorAlert(true);
-          setErrorMessage(error.response.data.message);
           setOpen(false);
-        });
-      await ApiService.getAllSkills()
-        .then((response) => {
-          setOptions([...response]);
-        })
-        .catch((error) => {
-          setOpenErrorAlert(true);
-          setErrorMessage(error.response.data.message);
+          setSeverity(false);
+          setMessage(ERROR_MESSAGES.errorSkillNotSaved);
         });
     } else {
       setErrorRepeated(true);
     }
-  };
-
-  const handleClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    openSuccessAlert && setOpenSuccessAlert(false);
-    openErrorAlert && setOpenErrorAlert(false);
   };
 
   return (
@@ -189,36 +179,28 @@ const EnvironmentModal: FC<EnvironmentModalProps> = ({
               })}
             </Select>
           </FormControl>
-          <Button onClick={handleSendSkill} variant="contained" className={styles.mt16}>
+          <LoadingButton
+            onClick={handleSendSkill}
+            loading={loadingAddingSkill}
+            startIcon={<SaveIcon />}
+            loadingPosition="start"
+            variant="contained"
+            className={styles.mt16}
+          >
             {BUTTON_TEXTS.save}
-          </Button>
+          </LoadingButton>
           <Button onClick={handleCloseModal} className={styles.mt16}>
             {BUTTON_TEXTS.cancel}
           </Button>
         </Box>
       </Modal>
-      <Snackbar
-        open={openSuccessAlert}
-        autoHideDuration={6000}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ marginTop: '20%' }}
-      >
-        <Alert onClose={handleClose} severity="success" sx={{ width: '100%' }}>
-          {SUCCESS_MESSAGES.successfullySavedSkill}
-        </Alert>
-      </Snackbar>
-      <Snackbar
-        open={openErrorAlert}
-        autoHideDuration={6000}
-        onClose={handleClose}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{ marginTop: '20%' }}
-      >
-        <Alert onClose={handleClose} severity="error" sx={{ width: '100%' }}>
-          {ERROR_MESSAGES.error} {errorMessage}
-        </Alert>
-      </Snackbar>
+
+      <AlertComponent
+        severityProp={severityProp}
+        onError={{ openErrorAlert, setOpenErrorAlert }}
+        onSuccess={{ openSuccessAlert, setOpenSuccessAlert }}
+        message={message}
+      />
     </>
   );
 };
