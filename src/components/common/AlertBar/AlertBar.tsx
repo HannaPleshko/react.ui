@@ -1,42 +1,23 @@
-import MuiAlert, { AlertProps } from '@mui/material/Alert';
-import Snackbar from '@mui/material/Snackbar';
-import { forwardRef, useEffect, useState } from 'react';
-import { useAppDispatch, useAppSelector } from '../../../hooks/redux';
-import { setServerError } from '../../../store/reducers/ServiceSlice';
-
-const Alert = forwardRef<HTMLDivElement, AlertProps>(function Alert(props, ref) {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
+import { useEffect, useState } from 'react';
+import { useAppSelector } from '../../../hooks/redux';
+import { ERROR_MESSAGES } from '../../../utils/constants/resumeConstants';
+import AlertComponent from '../../pages/CVEditor/components/AlertComponent';
 
 export default function AlertBar() {
-  const dispatch = useAppDispatch();
   const isServerError = useAppSelector((state) => state.service.serverError);
-  const [open, setOpen] = useState(false);
+  const [openErrorAlert, setOpenErrorAlert] = useState(false);
 
   useEffect(() => {
     if (isServerError) {
-      setOpen(true);
+      setOpenErrorAlert(true);
     }
   }, [isServerError]);
 
-  const handleClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
-    if (reason === 'clickaway') {
-      return;
-    }
-    setOpen(false);
-    dispatch(setServerError(false));
-  };
-
   return (
-    <Snackbar
-      anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      open={open}
-      autoHideDuration={6100}
-      onClose={handleClose}
-    >
-      <Alert onClose={handleClose} severity="error">
-        Server error occurred !
-      </Alert>
-    </Snackbar>
+    <AlertComponent
+      severityProp={false}
+      message={ERROR_MESSAGES.serverError}
+      onError={{ openErrorAlert, setOpenErrorAlert }}
+    />
   );
 }
