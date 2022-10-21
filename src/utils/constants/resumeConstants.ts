@@ -1,6 +1,5 @@
 export const BUTTON_TEXTS = {
   editResume: 'Edit resume',
-  download: 'Download resume',
   removeResume: 'Remove resume',
   removeLanguage: 'Remove language',
   save: 'Save',
@@ -13,6 +12,8 @@ export const BUTTON_TEXTS = {
   saveChanges: 'Save changes',
   edit: 'edit',
   remove: 'remove',
+  downloadPDF: 'Download pdf file',
+  downloadDOC: 'Download doc file',
 };
 
 export interface ICategoryList {
@@ -47,7 +48,7 @@ export const LANGUAGE_LIST = ['English', 'Polish', 'German', 'Russian', 'French'
 
 export const LEVEL_POSITION_LIST = ['Trainee', 'Junior', 'Middle', 'Senior', 'Team Lead'];
 export const USER_POSITION_LIST = [
-  'Software Engineer',
+  'Software Developer',
   'CEO',
   'Team Lead',
   'Enterprise Architect',
@@ -102,9 +103,11 @@ export const CONFIRMATION_MESSAGES = {
 export const ERROR_MESSAGES = {
   errors: 'Errors',
   error: 'Error:',
+  errorSkillNotSaved: 'Error: Skill does not saved',
   errorEmptySkill: 'Error: Repeated or empty skill',
   resumeNotSaved: 'The resume does not saved.',
   resumeNotDownloaded: 'Resume was not downloaded!',
+  serverError: 'Server error occurred!',
 };
 
 export const SUCCESS_MESSAGES = {
@@ -141,4 +144,9 @@ export const POSITION = {
   role: 'I am currently working in this role',
   userPosition: 'Current position',
   positionName: 'Position name',
+};
+
+export const DOC_TYPE = {
+  DOC: 'doc',
+  PDF: 'pdf',
 };

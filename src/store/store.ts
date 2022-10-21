@@ -1,3 +1,5 @@
+import { resumeApi } from './api/ResumeApi';
+import { skillApi } from './api/SkillApi';
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import {
   persistStore,
@@ -14,20 +16,22 @@ import autoMergeLevel2 from 'redux-persist/lib/stateReconciler/autoMergeLevel2';
 import resumeReducer from './reducers/ResumeSlice';
 import serviceReducer from './reducers/ServiceSlice';
 import resumeUtilsReducer from './reducers/ResumeUtilsSlice';
-import { errorsApi } from './RTQ/ResumeApi';
+import { errorsApi } from './api/ErrorsApi';
 
 const rootReducer = combineReducers({
   resume: resumeReducer,
   service: serviceReducer,
   resumeUtils: resumeUtilsReducer,
   [errorsApi.reducerPath]: errorsApi.reducer,
+  [skillApi.reducerPath]: skillApi.reducer,
+  [resumeApi.reducerPath]: resumeApi.reducer,
 });
 
 const persistConfig = {
   key: 'root',
   storage,
   stateReconciler: autoMergeLevel2,
-  blacklist: [errorsApi.reducerPath],
+  blacklist: [errorsApi.reducerPath, skillApi.reducerPath, resumeApi.reducerPath],
 };
 
 const persistedReducer = persistReducer<RootReducer>(persistConfig, rootReducer);
@@ -39,7 +43,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
       },
-    }).concat(errorsApi.middleware),
+    }).concat([errorsApi.middleware, skillApi.middleware, resumeApi.middleware]),
 });
 
 export const persistor = persistStore(store);

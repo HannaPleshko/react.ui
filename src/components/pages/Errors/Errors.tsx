@@ -1,23 +1,27 @@
 import { CircularProgress, Container, Typography } from '@mui/material';
+import { useEffect, useState } from 'react';
 import JSONPretty from 'react-json-pretty';
-import { IRTQError, useGetErrorsQuery } from '../../../store/RTQ/ResumeApi';
+import { useGetErrorsQuery } from '../../../store/api/ErrorsApi';
 import { ERROR_MESSAGES } from '../../../utils/constants/resumeConstants';
+import AlertComponent from '../CVEditor/components/AlertComponent';
 import './Errors.css';
 
-function Errors() {
-  const { data = [], isLoading, error, isError } = useGetErrorsQuery();
-  const serverError = error as IRTQError;
+const Errors: React.FC = () => {
+  const { data = [], isLoading, isError } = useGetErrorsQuery();
+  const [openErrorAlert, setOpenErrorAlert] = useState(false);
+
+  useEffect(() => {
+    setOpenErrorAlert(false);
+    if (isError) {
+      setOpenErrorAlert(true);
+    }
+  }, [isLoading]);
 
   return (
     <Container maxWidth="lg">
       <Typography variant="h6" sx={{ backgroundColor: 'lightgrey', mt: 4, mb: 2, pl: 1.7 }}>
         {ERROR_MESSAGES.errors}
       </Typography>
-      {isError && error ? (
-        <Typography variant="h6" sx={{ backgroundColor: '#FF7377', mt: 4, mb: 2, pl: 1.7 }}>
-          {serverError.error}
-        </Typography>
-      ) : null}
       {!isLoading ? (
         data.length !== 0 ? (
           <JSONPretty id="json-pretty" data={data}></JSONPretty>
@@ -25,8 +29,13 @@ function Errors() {
       ) : (
         <CircularProgress />
       )}
+      <AlertComponent
+        severityProp={false}
+        message={ERROR_MESSAGES.serverError}
+        onError={{ openErrorAlert, setOpenErrorAlert }}
+      />
     </Container>
   );
-}
+};
 
 export default Errors;

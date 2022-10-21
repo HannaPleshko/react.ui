@@ -28,11 +28,7 @@ export const resumeUtilsSlice = createSlice({
   },
 });
 
-export const {
-  setResumes,
-  resetResumeUtilsSlice,
-  removeResumeName,
-  setResumeSaved,
-} = resumeUtilsSlice.actions;
+export const { setResumes, resetResumeUtilsSlice, removeResumeName, setResumeSaved } =
+  resumeUtilsSlice.actions;
 
 export default resumeUtilsSlice.reducer;

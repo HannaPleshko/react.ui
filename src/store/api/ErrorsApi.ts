@@ -8,11 +8,6 @@ export interface IServerError {
   status: number;
 }
 
-export interface IRTQError {
-  status: string;
-  error: string;
-}
-
 export const errorsApi = createApi({
   reducerPath: 'errorsApi',
   baseQuery: customFetchBase,
